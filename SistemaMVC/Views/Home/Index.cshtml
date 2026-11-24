@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Menú principal";
+    var rol = ViewBag.Rol as string;
+    bool esRecepcion = rol == "Recepcionista" || rol == "Administrador";
+    bool esOperario = rol == "Operario" || rol == "Administrador";
+}
+<h3 class="mb-4">Menú principal</h3>
+<div class="row g-4">
+    @if (esRecepcion)
+    {
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-calendar-check text-primary"></i> Generar Reserva</h5>
+                    <p class="card-text text-muted">Registrar la reserva de una o varias habitaciones para un cliente del hotel.</p>
+                    <a class="btn btn-primary" asp-controller="Reserva" asp-action="Nueva">Generar Reserva</a>
+                </div>
+            </div>
+        </div>
+    }
+    @if (esOperario)
+    {
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-tools text-success"></i> Generar Requerimiento</h5>
+                    <p class="card-text text-muted">Solicitar los materiales necesarios para la elaboración de un mueble.</p>
+                    <a class="btn btn-success" asp-controller="Requerimiento" asp-action="Nuevo">Generar Requerimiento</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

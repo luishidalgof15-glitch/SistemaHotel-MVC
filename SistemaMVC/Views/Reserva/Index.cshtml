@@ -1,0 +1,281 @@
+@model ReservaViewModel
+@{
+    ViewData["Title"] = "Reserva";
+    string F(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string M(decimal v) => "S/ " + v.ToString("N2");
+}
+
+<div class="card shadow-sm">
+    <div class="card-header ventana-titulo"><i class="bi bi-calendar-check"></i> RESERVA</div>
+    <div class="card-body">
+
+        <partial name="_Mensajes" model="(Model.Mensaje, Model.Error)" />
+
+        @if (Model.NumReservaGenerada != null)
+        {
+            <div class="text-center border rounded p-3 mb-3 bg-light">
+                <div class="text-muted">Número de reserva</div>
+                <div class="numero-generado">@Model.NumReservaGenerada</div>
+                <a class="btn btn-primary btn-sm mt-2" asp-action="Nueva"><i class="bi bi-plus-lg"></i> Nueva reserva</a>
+            </div>
+        }
+
+        @if (Model.ClienteNoExiste)
+        {
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                <span>El cliente no está registrado. ¿Desea registrar un nuevo cliente?</span>
+                <a class="btn btn-sm btn-warning" asp-controller="Cliente" asp-action="Create"><i class="bi bi-person-plus"></i> Registrar cliente</a>
+            </div>
+        }
+
+        <form asp-action="Index" method="post" id="frmReserva">
+
+            <!-- ===== Datos del Cliente ===== -->
+            <fieldset class="grupo">
+                <legend>Datos del Cliente</legend>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small">Cliente (código)</label>
+                        <div class="input-group">
+                            <input type="text" name="CodCliente" class="form-control" maxlength="5"
+                                   value="@Model.Cliente?.CodCliente" placeholder="C0001" />
+                            <button type="submit" class="btn btn-outline-primary" asp-action="BuscarCliente" title="Buscar Cliente">
+                                <i class="bi bi-binoculars"></i>
+                            </button>
+                            <button type="submit" class="btn btn-outline-secondary" asp-action="IrAgregarCliente" title="Agregar Cliente">
+                                <i class="bi bi-file-earmark-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label small">Nombre</label>
+                        <input type="text" class="form-control" readonly value="@Model.Cliente?.NombreCompleto" />
+                    </div>
+                </div>
+                <div class="form-text">Deje el código vacío y presione <i class="bi bi-binoculars"></i> para ver la lista de clientes.</div>
+            </fieldset>
+
+            <!-- ===== Datos de la Reserva ===== -->
+            <fieldset class="grupo">
+                <legend>Datos de la Reserva</legend>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small">Fecha de llegada</label>
+                        <input type="date" name="FechaLlegada" id="FechaLlegada" class="form-control" value="@F(Model.FechaLlegada)" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Fecha de salida</label>
+                        <input type="date" name="FechaSalida" id="FechaSalida" class="form-control" value="@F(Model.FechaSalida)" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-primary w-100" asp-action="CalcularDias" id="btnCalcular">
+                            <i class="bi bi-calculator"></i> Calcular
+                        </button>
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <label class="form-label small">Cantidad días</label>
+                        <input type="text" class="form-control text-end" readonly value="@(Model.CantidadDias > 0 ? Model.CantidadDias.ToString() : "")" />
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- ===== Datos de las Habitaciones ===== -->
+            <fieldset class="grupo">
+                <legend>Datos de las Habitaciones</legend>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small">Número de habitación</label>
+                        <div class="input-group">
+                            <input type="text" name="NumHabitacion" class="form-control" maxlength="5"
+                                   value="@Model.HabitacionSeleccionada?.NumHabitacion" />
+                            <button type="submit" class="btn btn-outline-primary" asp-action="BuscarHabitacion" title="Buscar Habitación">
+                                <i class="bi bi-binoculars"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Tipo</label>
+                        <input type="text" class="form-control" readonly value="@Model.HabitacionSeleccionada?.Tipo" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Costo x día</label>
+                        <input type="text" class="form-control text-end" readonly
+                               value="@(Model.HabitacionSeleccionada != null ? M(Model.HabitacionSeleccionada.CostoDia) : "")" />
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <button type="submit" class="btn btn-primary w-100" asp-action="AgregarHabitacion">
+                            <i class="bi bi-plus-circle"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-md-8">
+                        <label class="form-label small">Nombre del huésped</label>
+                        <input type="text" name="NombreHuesped" class="form-control" maxlength="100" value="@Model.NombreHuesped" />
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- ===== Detalle de la Reserva ===== -->
+            <fieldset class="grupo">
+                <legend>Detalle de la Reserva</legend>
+                <div class="d-flex gap-2">
+                    <div class="table-responsive flex-grow-1">
+                        <table class="table table-sm table-bordered tabla-detalle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px"></th>
+                                    <th>Número</th><th>Tipo</th><th>Huésped</th>
+                                    <th class="text-end">Costo diario</th><th class="text-end">Días</th><th class="text-end">Monto a pagar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Detalles.Count == 0)
+                                {
+                                    <tr><td colspan="7" class="text-center text-muted py-4">No hay habitaciones agregadas.</td></tr>
+                                }
+                                @foreach (var d in Model.Detalles)
+                                {
+                                    <tr>
+                                        <td class="text-center"><input type="radio" class="form-check-input" name="HabitacionEliminar" value="@d.NumHabitacion" /></td>
+                                        <td>@d.NumHabitacion</td>
+                                        <td>@d.Tipo</td>
+                                        <td>@d.NombreHuesped</td>
+                                        <td class="text-end">@M(d.CostoDia)</td>
+                                        <td class="text-end">@d.Dias</td>
+                                        <td class="text-end">@M(d.MontoPagar)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-outline-danger" asp-action="EliminarHabitacion" title="Eliminar habitación seleccionada">
+                            <i class="bi bi-eraser"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row justify-content-end mt-3">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text" style="width:110px">Sub total</span>
+                            <input type="text" class="form-control text-end" readonly value="@M(Model.SubTotal)" />
+                        </div>
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text" style="width:110px">IGV (18%)</span>
+                            <input type="text" class="form-control text-end" readonly value="@M(Model.IGV)" />
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text fw-bold" style="width:110px">Monto total</span>
+                            <input type="text" class="form-control text-end fw-bold" readonly value="@M(Model.MontoTotal)" />
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-success px-4" asp-action="Grabar"><i class="bi bi-floppy"></i> Grabar</button>
+                <a class="btn btn-secondary px-4" asp-action="Salir"><i class="bi bi-door-open"></i> Salir</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Ventana: Buscar Cliente ===== -->
+@if (Model.MostrarClientes)
+{
+    <div class="modal fade" id="modalClientes" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header ventana-titulo">
+                    <h5 class="modal-title">Buscar Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" placeholder="Filtrar por nombre, apellido o DNI..." id="filtroClientes" />
+                    <table class="table table-sm table-hover tabla-detalle" id="tablaClientes">
+                        <thead><tr><th>Código</th><th>Nombres y apellidos</th><th>DNI</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var c in Model.ListaClientes)
+                            {
+                                <tr>
+                                    <td>@c.CodCliente</td>
+                                    <td>@c.NombreCompleto</td>
+                                    <td>@c.DNI</td>
+                                    <td class="text-end">
+                                        <a class="btn btn-sm btn-primary" asp-action="SeleccionarCliente" asp-route-cod="@c.CodCliente">Seleccionar</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-secondary" asp-controller="Cliente" asp-action="Create"><i class="bi bi-person-plus"></i> Agregar Cliente</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ===== Ventana: Buscar Habitación ===== -->
+@if (Model.MostrarHabitaciones)
+{
+    <div class="modal fade" id="modalHabitaciones" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header ventana-titulo">
+                    <h5 class="modal-title">Buscar Habitación disponible</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm table-hover tabla-detalle">
+                        <thead><tr><th>Número</th><th>Tipo</th><th class="text-end">Costo x día</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var h in Model.ListaHabitaciones)
+                            {
+                                <tr>
+                                    <td>@h.NumHabitacion</td>
+                                    <td>@h.Tipo</td>
+                                    <td class="text-end">@M(h.CostoDia)</td>
+                                    <td class="text-end">
+                                        <a class="btn btn-sm btn-primary" asp-action="SeleccionarHabitacion" asp-route-num="@h.NumHabitacion">Seleccionar</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Abre automáticamente la ventana de búsqueda que corresponda
+        ['modalClientes', 'modalHabitaciones'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) new bootstrap.Modal(el).show();
+        });
+
+        // Filtro de la lista de clientes
+        var filtro = document.getElementById('filtroClientes');
+        if (filtro) {
+            filtro.addEventListener('input', function () {
+                var texto = filtro.value.toLowerCase();
+                document.querySelectorAll('#tablaClientes tbody tr').forEach(function (fila) {
+                    fila.style.display = fila.innerText.toLowerCase().includes(texto) ? '' : 'none';
+                });
+            });
+        }
+
+        // Paso 6: al ingresar ambas fechas el sistema calcula los días automáticamente
+        document.getElementById('FechaSalida').addEventListener('change', function () {
+            if (document.getElementById('FechaLlegada').value && this.value) {
+                document.getElementById('btnCalcular').click();
+            }
+        });
+    </script>
+}

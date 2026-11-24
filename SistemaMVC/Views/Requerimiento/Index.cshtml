@@ -1,0 +1,129 @@
+@model RequerimientoViewModel
+@{
+    ViewData["Title"] = "Generar Requerimiento";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header ventana-titulo"><i class="bi bi-tools"></i> GENERAR REQUERIMIENTO</div>
+    <div class="card-body">
+
+        <partial name="_Mensajes" model="(Model.Mensaje, Model.Error)" />
+
+        @if (Model.NumRequerimientoGenerado != null)
+        {
+            <div class="text-center border rounded p-3 mb-3 bg-light">
+                <div class="text-muted">Número de requerimiento</div>
+                <div class="numero-generado">@Model.NumRequerimientoGenerado</div>
+            </div>
+        }
+
+        <form asp-action="Index" method="post">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-3">
+                    <label class="form-label small">Cod Operario</label>
+                    <input type="text" class="form-control" readonly value="@Model.CodOperario" />
+                </div>
+                <div class="col-md-4 ms-md-5">
+                    <button type="submit" class="btn btn-outline-primary w-100" asp-action="ConsultarMateriales">
+                        <i class="bi bi-search"></i> Consultar Materiales
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered tabla-detalle">
+                    <thead>
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th>Cod Operario</th><th>Cod Material</th><th>Material</th><th>Marca</th><th class="text-end">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Detalles.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-5">No hay materiales seleccionados.</td></tr>
+                        }
+                        @foreach (var d in Model.Detalles)
+                        {
+                            <tr>
+                                <td class="text-center"><input type="radio" class="form-check-input" name="materialEliminar" value="@d.CodMaterial" /></td>
+                                <td>@d.CodOperario</td>
+                                <td>@d.CodMaterial</td>
+                                <td>@d.Material</td>
+                                <td>@d.Marca</td>
+                                <td class="text-end">@d.Cantidad</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success w-100" asp-action="Generar"><i class="bi bi-check2-square"></i> Generar Requerimiento</button>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-outline-danger w-100" asp-action="Eliminar"><i class="bi bi-trash"></i> Eliminar</button>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-outline-secondary w-100" asp-action="Limpiar"><i class="bi bi-eraser"></i> Limpiar</button>
+                </div>
+                <div class="col-md-3">
+                    <a class="btn btn-secondary w-100" asp-action="Salir"><i class="bi bi-door-open"></i> Salir</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Ventana: Consultar Materiales ===== -->
+@if (Model.MostrarMateriales && Model.ListaMateriales.Count > 0)
+{
+    <div class="modal fade" id="modalMateriales" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <form asp-action="AgregarMateriales" method="post" class="modal-content">
+                <div class="modal-header ventana-titulo">
+                    <h5 class="modal-title">Consultar Materiales</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">Marque los materiales que necesita e indique la cantidad.</p>
+                    <table class="table table-sm table-hover tabla-detalle align-middle">
+                        <thead>
+                            <tr><th></th><th>Código</th><th>Material</th><th>Marca</th><th>Unidad</th><th class="text-end">Stock</th><th style="width:110px">Cantidad</th></tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.ListaMateriales.Count; i++)
+                            {
+                                var m = Model.ListaMateriales[i];
+                                <tr>
+                                    <td>
+                                        <input type="hidden" name="seleccion[@i].CodMaterial" value="@m.CodMaterial" />
+                                        <input type="checkbox" class="form-check-input" name="seleccion[@i].Seleccionado" value="true" />
+                                    </td>
+                                    <td>@m.CodMaterial</td>
+                                    <td>@m.Nombre</td>
+                                    <td>@m.Marca</td>
+                                    <td>@m.UnidadMedida</td>
+                                    <td class="text-end">@m.Stock</td>
+                                    <td><input type="number" class="form-control form-control-sm" name="seleccion[@i].Cantidad" value="1" min="1" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Agregar seleccionados</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        var el = document.getElementById('modalMateriales');
+        if (el) new bootstrap.Modal(el).show();
+    </script>
+}

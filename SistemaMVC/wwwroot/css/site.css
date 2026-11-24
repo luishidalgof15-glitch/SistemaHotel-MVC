@@ -1,0 +1,9 @@
+body { background: #f3f5f8; }
+.bg-primary-subtle-dark { background: #1f4e79; }
+.ventana-titulo { background: linear-gradient(90deg, #1f4e79, #2e75b6); color: #fff; font-weight: 600; }
+fieldset.grupo { border: 1px solid #c9d3df; border-radius: .5rem; padding: .75rem 1rem 1rem; margin-bottom: 1rem; background: #fff; }
+fieldset.grupo legend { float: none; width: auto; font-size: .95rem; font-weight: 600; color: #1f4e79; padding: 0 .4rem; margin-bottom: 0; }
+.tabla-detalle thead th { background: #1f4e79; color: #fff; font-weight: 500; }
+.tabla-detalle tbody tr:hover { background: #eef4fb; }
+.numero-generado { font-size: 2rem; font-weight: 700; color: #1f4e79; }
+input[readonly] { background-color: #eef1f5 !important; }
